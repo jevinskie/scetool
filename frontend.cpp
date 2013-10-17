@@ -440,12 +440,13 @@ void frontend_print_infos_custom(s8 *file)
 	// loop through the metadata section headers, 
 	// check for "compressed" settings
 	for(i = 0; i < ctxt->metah->section_count; i++)
-	{
-		msh = (metadata_section_header_t*)&ctxt->metash[i];
-		// see if the section is compressed
+	{	
+		msh = (metadata_section_header_t*)&ctxt->metash[i];		
 		if(msh->compressed == METADATA_SECTION_COMPRESSED)
+		{	// if section is compressed, we are done!
 			bIsCompressed = TRUE;
-		break;		
+			break;	
+		}
 	}
 	// output our "compressed" status, if we found any compressed
 	// sections
