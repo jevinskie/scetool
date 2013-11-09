@@ -16,7 +16,9 @@
 #include "elf_inlines.h"
 #include "tables.h"
 #include "sha1.h"
-#include "np.h"
+#include "Zlib_Functions.h"
+
+
 
 static void _get_shdr_flags(s8 *str, u64 flags)
 {
@@ -611,10 +613,15 @@ BOOL self_write_to_elf(sce_buffer_ctxt_t *ctxt, const s8 *elf_out)
 					_es_elf64_phdr(&ph[msh[i].index]);
 					u8 *data = (u8 *)malloc(ph[msh[i].index].p_filesz);
 
-					_zlib_inflate(ctxt->scebuffer + msh[i].data_offset, msh[i].data_size, data, ph[msh[i].index].p_filesz);
+					//_zlib_inflate(ctxt->scebuffer + msh[i].data_offset, msh[i].data_size, data, ph[msh[i].index].p_filesz);
+					Zlib_UncompressData(
+						(unsigned char*)(ctxt->scebuffer + msh[i].data_offset),	// input data
+						(int)msh[i].data_size,									// input size
+						(unsigned char*)data,									// output buffer
+						(int)ph[msh[i].index].p_filesz);						// output size
+
 					fseek(fp, ph[msh[i].index].p_offset, SEEK_SET);
 					fwrite(data, sizeof(u8), ph[msh[i].index].p_filesz, fp);
-
 					free(data);
 				}
 				else

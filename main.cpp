@@ -28,6 +28,7 @@
 #include "rvk.h"
 
 #include "frontend.h"
+#include "Zlib_Functions.h"
 
 /*! Shorter Versions of arg options. */
 #define ARG_NULL no_argument
@@ -35,6 +36,9 @@
 #define ARG_REQ required_argument
 #define ARG_OPT optional_argument
 
+
+/*  ZLIB 'compress' LEVEL */
+u32 g_ZlibCompressLevel = Z_DEFAULT_COMPRESSION;
 /*! Verbose mode. */
 BOOL _verbose = FALSE;
 /*! Raw mode. */
@@ -165,6 +169,7 @@ static void print_usage()
 	printf(" -k, --print-keys                             List keys.\n");
 	printf(" -i, --print-infos      File-in               Print SCE file info.\n");
 	printf(" -w, --print-cust-info  File-in               Print SCE custom info (for PS3MFW).\n");
+	printf(" -z, --zlib-comp-level  (-1 to 9)             Set Zlib Compress Level(-1 is default)\n");
 	printf(" -d, --decrypt          File-in File-out      Decrypt/dump SCE file.\n");
 	printf(" -e, --encrypt          File-in File-out      Encrypt/create SCE file.\n");
 	printf("OPTIONS                 Possible Values       Explanation\n");
@@ -209,7 +214,7 @@ static void parse_args(int argc, char **argv)
 #ifdef CONFIG_CUSTOM_INDIV_SEED
 	while((c = getopt_long(argc, argv, "hki:d:e:vrt:0:1:s:2:m:K:3:4:5:A:6:7:8:9:a:b:c:f:l:g:j:", options, NULL)) != -1)
 #else
-	while((c = getopt_long(argc, argv, "hki:w:d:e:vrt:0:1:s:2:m:K:3:4:5:A:6:7:8:9:b:c:f:l:g:j:", options, NULL)) != -1)
+	while((c = getopt_long(argc, argv, "hki:w:d:e:vrt:0:1:s:2:m:K:3:4:5:A:6:7:8:9:b:c:f:l:g:j:z:", options, NULL)) != -1)
 #endif
 	{
 		switch(c)
@@ -229,12 +234,13 @@ static void parse_args(int argc, char **argv)
 			_file_in = optarg;
 			//Got all args.
 			return;
-			break;
-		case 'w':
+			break;	
+		/* print_infos_custom (for PS3MFW) */
+		case 'w':	
 			_got_work = TRUE;
 			_print_info_custom = TRUE;
 			_file_in = optarg;
-			//Got all args.
+			//Got all args.	
 			return;
 			break;
 		case 'd':
@@ -324,6 +330,15 @@ static void parse_args(int argc, char **argv)
 			break;
 		case VAL_ADD_SIG:
 			_add_sig = optarg;
+			break;		
+		/* Zlib Compress level setting */
+		case 'z':					
+			g_ZlibCompressLevel = atoi(optarg);
+			if ( (g_ZlibCompressLevel > 9) && (g_ZlibCompressLevel != -1) ) {
+				printf("\n\n[*] Error: Zlib Compress level must be in the range[-1:9]\n\n");
+				print_usage();
+			}
+			//Got all args.			
 			break;
 		case '?':
 			print_usage();
@@ -375,7 +390,10 @@ int main(int argc, char **argv)
 		print_usage();
 
 	print_version();
-	printf("\n");
+	printf("\n\n");
+
+	/* print the ZLIB COMPRESSION SETTING */
+	printf("*** Zlib Compression Level:%d ***\n\n", g_ZlibCompressLevel);
 
 	//Try to get path from env:PS3.
 	if((ps3 = getenv(CONFIG_ENV_PS3)) != NULL)
