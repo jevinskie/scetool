@@ -46,7 +46,7 @@
 #define CONFIG_NPDRM_WATERMARK "watermarktrololo"
 
 /*! Environment variables. */
-#define CONFIG_ENV_PS3 "PS3"
+#define CONFIG_ENV_PS3 "PS3_KEYS"
 
 /*! Path configurations. */
 #define CONFIG_KEYS_FILE "keys"
