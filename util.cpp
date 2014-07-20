@@ -55,17 +55,19 @@ u8 *_read_buffer(const s8 *file, u32 *length)
 
 	fseek(fp, 0, SEEK_END);
 	size = ftell(fp);
-	fseek(fp, 0, SEEK_SET);
+	if(size==0){return NULL;}
+	else{
+		fseek(fp, 0, SEEK_SET);
 
-	u8 *buffer = (u8 *)malloc(sizeof(u8) * size);
-	fread(buffer, sizeof(u8), size, fp);
+		u8 *buffer = (u8 *)malloc(sizeof(u8) * size);
+		fread(buffer, sizeof(u8), size, fp);
 
-	if(length != NULL)
-		*length = size;
+		if(length != NULL)
+			*length = size;
 
-	fclose(fp);
-
-	return buffer;
+		fclose(fp);
+		return buffer;
+	}
 }
 
 int _write_buffer(const s8 *file, u8 *buffer, u32 length)
