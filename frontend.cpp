@@ -296,7 +296,7 @@ static BOOL _fill_npdrm_config(self_config_t *sconf)
 	return TRUE;
 }
 
-void frontend_print_infos_custom(s8 *file)
+int frontend_print_infos_custom(s8 *file)
 {
 	const s8* self_name = NULL;	
 	u8* pBuffer = NULL;
@@ -309,17 +309,20 @@ void frontend_print_infos_custom(s8 *file)
 	u8 *keyset = NULL;
 	u8 *meta_info = NULL;
 	sce_buffer_ctxt_t *ctxt = NULL;
+	int ret = 0;
 
 	// read the file into the buffer
 	u8 *buf = _read_buffer(file, NULL);
 	if(buf == NULL) {
 		printf("[*] Error: Could not load %s\n", file);
+		ret = 1;
 		goto exit;
 	}
 	
 	ctxt = sce_create_ctxt_from_buffer(buf);
 	if(ctxt == NULL) {
 		printf("[*] Error: Could not process %s\n", file);
+		ret = 1;
 		goto exit;
 	}
 	
@@ -328,7 +331,7 @@ void frontend_print_infos_custom(s8 *file)
 		if(strlen(_meta_info) != 0x40*2)
 		{
 			printf("[*] Error: Metadata info needs to be 64 bytes.\n");
-			return;
+			return 1;
 		}
 		meta_info = _x_to_u8_buffer(_meta_info);
 	}
@@ -338,7 +341,7 @@ void frontend_print_infos_custom(s8 *file)
 		if(strlen(_keyset) != (0x20 + 0x10 + 0x15 + 0x28 + 0x01)*2)
 		{
 			printf("[*] Error: Keyset has a wrong length.\n");
-			return;
+			return 1;
 		}
 		keyset = _x_to_u8_buffer(_keyset);
 	}
@@ -351,31 +354,37 @@ void frontend_print_infos_custom(s8 *file)
 		else 
 		{
 			printf("[*] Warning: Could not decrypt data.\n");
-			return;
+			return 1;
 		}
 	}
 	else
 	{
 		printf("[*] Warning: Could not decrypt header.\n");
-		return;
+		return 1;
 	}
 
 	//Check for SELF.
 	if(ctxt->sceh->header_type != SCE_HEADER_TYPE_SELF)
-		return;
+		return 1;
 
 	// setup the application info types
 	self_name = _get_name(_self_types_params, ctxt->self.ai->self_type);
-	if(self_name == NULL)
+	if(self_name == NULL) {
+		ret = 1;
 		goto exit;
+	}
 
 	// check control infos.
-	if(ctxt->self.cis == NULL) 
+	if(ctxt->self.cis == NULL) {
+		ret = 1;
 		goto exit;
+	}
 
 	// check optional headers.
-	if(ctxt->mdec == FALSE)
+	if(ctxt->mdec == FALSE) {
+		ret = 1;
 		goto exit;
+	}
 
 	// print the application info types
 	printf("Key-Revision:%02X\n", ctxt->sceh->key_revision);
@@ -461,12 +470,14 @@ exit:
 	if (buf != NULL)
 		free(buf);
 
-	return;
+	return ret;
 }
 
-void frontend_print_infos(s8 *file)
+int frontend_print_infos(s8 *file)
 {
 	u8 *buf = _read_buffer(file, NULL);
+	int ret = 0;
+
 	if(buf != NULL)
 	{
 		sce_buffer_ctxt_t *ctxt = sce_create_ctxt_from_buffer(buf);
@@ -478,7 +489,7 @@ void frontend_print_infos(s8 *file)
 				if(strlen(_meta_info) != 0x40*2)
 				{
 					printf("[*] Error: Metadata info needs to be 64 bytes.\n");
-					return;
+					return 1;
 				}
 				meta_info = _x_to_u8_buffer(_meta_info);
 			}
@@ -489,7 +500,7 @@ void frontend_print_infos(s8 *file)
 				if(strlen(_keyset) != (0x20 + 0x10 + 0x15 + 0x28 + 0x01)*2)
 				{
 					printf("[*] Error: Keyset has a wrong length.\n");
-					return;
+					return 1;
 				}
 				keyset = _x_to_u8_buffer(_keyset);
 			}
@@ -513,17 +524,24 @@ void frontend_print_infos(s8 *file)
 				spp_print(stdout, ctxt);
 			free(ctxt);
 		}
-		else
+		else {
 			printf("[*] Error: Could not process %s\n", file);
+			ret = 1;
+		}
 		free(buf);
 	}
-	else
+	else {
 		printf("[*] Error: Could not load %s\n", file);
+		ret = 1;
+	}
+	return ret;
 }
 
-void frontend_decrypt(s8 *file_in, s8 *file_out)
+int frontend_decrypt(s8 *file_in, s8 *file_out)
 {
 	u8 *buf = _read_buffer(file_in, NULL);
+	int ret = 0;
+
 	if(buf != NULL)
 	{
 		sce_buffer_ctxt_t *ctxt = sce_create_ctxt_from_buffer(buf);
@@ -535,7 +553,7 @@ void frontend_decrypt(s8 *file_in, s8 *file_out)
 				if(strlen(_meta_info) != 0x40*2)
 				{
 					printf("[*] Error: Metadata info needs to be 64 bytes.\n");
-					return;
+					return 1;
 				}
 				meta_info = _x_to_u8_buffer(_meta_info);
 			}
@@ -546,7 +564,7 @@ void frontend_decrypt(s8 *file_in, s8 *file_out)
 				if(strlen(_keyset) != (0x20 + 0x10 + 0x15 + 0x28 + 0x01)*2)
 				{
 					printf("[*] Error: Keyset has a wrong length.\n");
-					return;
+					return 1;
 				}
 				keyset = _x_to_u8_buffer(_keyset);
 			}
@@ -590,33 +608,43 @@ void frontend_decrypt(s8 *file_in, s8 *file_out)
 							printf("[*] Error: Could not write SPP.\n");
 					}
 				}
-				else
+				else {
 					printf("[*] Error: Could not decrypt data.\n");
+					ret = 1;
+				}
 			}
-			else
+			else {
 				printf("[*] Error: Could not decrypt header.\n");
+				ret = 1;
+			}
 			free(ctxt);
 		}
-		else
+		else {
 			printf("[*] Error: Could not process %s\n", file_in);
+			ret = 1;
+		}
 		free(buf);
 	}
-	else
+	else {
 		printf("[*] Error: Could not load %s\n", file_in);
+		ret = 1;
+	}
+	return ret;
 }
 
-void frontend_encrypt(s8 *file_in, s8 *file_out)
+int frontend_encrypt(s8 *file_in, s8 *file_out)
 {
 	BOOL can_compress = FALSE;
 	self_config_t sconf;
 	sce_buffer_ctxt_t *ctxt = NULL;
 	u32 file_len = 0;
 	u8 *file;
+	int ret = 0;
 
 	if(_file_type == NULL)
 	{
 		printf("[*] Error: Please specify a file type.\n");
-		return;
+		return 1;
 	}
 
 	u8 *keyset = NULL;
@@ -625,7 +653,7 @@ void frontend_encrypt(s8 *file_in, s8 *file_out)
 		if(strlen(_keyset) != (0x20 + 0x10 + 0x15 + 0x28 + 0x01)*2)
 		{
 			printf("[*] Error: Keyset has a wrong length.\n");
-			return;
+			return 1;
 		}
 		keyset = _x_to_u8_buffer(_keyset);
 	}
@@ -633,7 +661,7 @@ void frontend_encrypt(s8 *file_in, s8 *file_out)
 	if((file = _read_buffer(file_in, &file_len)) == NULL)
 	{
 		printf("[*] Error: Could not read %s.\n", file_in);
-		return;
+		return 1;
 	}
 
 	if(strcmp(_file_type, "SELF") == 0)
@@ -641,25 +669,25 @@ void frontend_encrypt(s8 *file_in, s8 *file_out)
 		if(_self_type == NULL && _template == NULL)
 		{
 			printf("[*] Error: Please specify a SELF type.\n");
-			return;
+			return 1;
 		}
 
 		if(_template != NULL)
 		{
 			//Use a template SELF to fill the config.
 			if(_fill_self_config_template(_template, &sconf) == FALSE)
-				return;
+				return 1;
 		}
 		else
 		{
 			//Fill the config from command line arguments.
 			if(_fill_self_config(&sconf) == FALSE)
-				return;
+				return 1;
 		}
 
 		if(sconf.self_type == SELF_TYPE_NPDRM)
 			if(_fill_npdrm_config(&sconf) == FALSE)
-				return;
+				return 1;
 
 		ctxt = sce_create_ctxt_build_self(file, file_len);
 		if(self_build_self(ctxt, &sconf) == TRUE)
@@ -667,7 +695,7 @@ void frontend_encrypt(s8 *file_in, s8 *file_out)
 		else
 		{
 			printf("[*] Error: SELF not built.\n");
-			return;
+			return 1;
 		}
 
 		//SPU SELFs may not be compressed.
@@ -677,17 +705,17 @@ void frontend_encrypt(s8 *file_in, s8 *file_out)
 	else if(strcmp(_file_type, "RVK") == 0)
 	{
 		printf("soon...\n");
-		return;
+		return 1;
 	}
 	else if(strcmp(_file_type, "PKG") == 0)
 	{
 		printf("soon...\n");
-		return;
+		return 1;
 	}
 	else if(strcmp(_file_type, "SPP") == 0)
 	{
 		printf("soon...\n");
-		return;
+		return 1;
 	}
 
 	//Compress data if wanted.
@@ -709,7 +737,7 @@ void frontend_encrypt(s8 *file_in, s8 *file_out)
 	else
 	{
 		printf("[*] Error: Data not encrypted.\n");
-		return;
+		return 1;
 	}
 
 	//Write file.
@@ -721,10 +749,15 @@ void frontend_encrypt(s8 *file_in, s8 *file_out)
 		{
 			if(np_sign_file(file_out) == TRUE)
 				printf("[*] Added NPDRM footer signature.\n");
-			else
+			else {
 				printf("[*] Error: Could not add NPDRM footer signature.\n");
+				ret = 1;
+			}
 		}
 	}
-	else
+	else {
 		printf("[*] Error: %s not written.\n", file_out);
+		ret = 1;
+	}
+	return ret;
 }

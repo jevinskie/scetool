@@ -498,13 +498,13 @@ int main(int argc, char **argv)
 	}
 	// select the appropriate task to dispatch
 	else if(_print_info)
-		frontend_print_infos(_file_in);
+		return frontend_print_infos(_file_in);
 	else if(_print_info_custom)
-		frontend_print_infos_custom(_file_in);
+		return frontend_print_infos_custom(_file_in);
 	else if(_decrypt_file)
-		frontend_decrypt(_file_in, _file_out);
+		return frontend_decrypt(_file_in, _file_out);
 	else if(_encrypt_file)
-		frontend_encrypt(_file_in, _file_out);
-	return 0;
+		return frontend_encrypt(_file_in, _file_out);
+	return 1;
 }
 #endif
