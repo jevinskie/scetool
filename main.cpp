@@ -39,7 +39,7 @@
 
 
 /*  ZLIB 'compress' LEVEL */
-u32 g_ZlibCompressLevel = Z_DEFAULT_COMPRESSION;
+int g_ZlibCompressLevel = Z_DEFAULT_COMPRESSION;
 /*! Verbose mode. */
 BOOL _verbose = FALSE;
 /*! Raw mode. */
