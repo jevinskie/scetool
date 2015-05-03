@@ -83,8 +83,7 @@ s8 *_content_id = NULL;
 s8 *_klicensee = NULL;
 s8 *_real_fname = NULL;
 s8 *_add_sig = NULL;
-
-static s8 *_data_path = NULL;
+s8 *_data_path = NULL;
 
 /*! Input file. */
 static s8 *_file_in = NULL;
@@ -404,9 +403,13 @@ int main(int argc, char **argv)
 	printf("*** Zlib Compression Level:%d ***\n\n", g_ZlibCompressLevel);
 
 	//Try to get path from env:PS3.
-	if(_data_path == NULL && (ps3 = getenv(CONFIG_ENV_PS3)) != NULL)
-		if(access(ps3, 0) != 0)
+	if(_data_path == NULL && (ps3 = getenv(CONFIG_ENV_PS3)) != NULL) {
+		if(access(ps3, 0) != 0) {
 			ps3 = NULL;
+		} else {
+			_data_path = ps3;
+		}
+	}
 	//Load keysets.
 	if(_data_path != NULL)
 		sprintf(path, "%s/%s", _data_path, CONFIG_KEYS_FILE);
