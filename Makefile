@@ -1,5 +1,5 @@
-CC=clang
-CXX=clang++
+CC=gcc
+CXX=g++
 CFLAGS=-g -O0 -Wall
 CXXFLAGS=$(CFLAGS)
 OS_TARGET=scetool
@@ -11,7 +11,7 @@ OBJS=aes.o aes_omac.o bn.o ec.o ecdsa.o frontend.o getopt.o keys.o list.o \
 
 $(OS_TARGET): $(OBJS)
 	${LINK}
-	if $(CC) $(CFLAGS) $(OBJS) -o $(OS_TARGET) $(LDFLAGS) $(LIBS); then \
+	if $(CXX) $(CXXFLAGS) $(OBJS) -o $(OS_TARGET) $(LDFLAGS) $(LIBS); then \
 		${LINK_OK}; \
 	else \
 		${LINK_FAILED}; \

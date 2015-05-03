@@ -429,7 +429,7 @@ int main(int argc, char **argv)
 		if(_list_keys == TRUE)
 		{
 			printf("[*] Error: Could not load keys.\n");
-			return 0;
+			return 1;
 		}
 		else
 			printf("[*] Warning: Could not load keys.\n");
@@ -473,7 +473,7 @@ int main(int argc, char **argv)
 		if(strlen(_klicensee) != 0x10*2)
 		{
 			printf("[*] Error: klicensee needs to be 16 bytes.\n");
-			return FALSE;
+			return 1;
 		}
 		np_set_klicensee(_x_to_u8_buffer(_klicensee));
 	}
@@ -489,16 +489,12 @@ int main(int argc, char **argv)
 			printf("[*] Error: cannot open file.\n");
 		else 
 			printf("[*] Error: unknown error (%d).\n", check);
-		return FALSE;
+		return 1;
 	}
 	if(_list_keys == TRUE)
 	{
 		printf("[*] Loaded keysets:\n");
 		_print_key_list(stdout);
-	}
-	if (!_file_in) {
-		printf("[*] Input file has zero size. Exiting!\n");
-		return -1;
 	}
 	// select the appropriate task to dispatch
 	else if(_print_info)
