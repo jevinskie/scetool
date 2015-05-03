@@ -13,7 +13,9 @@
 #include "keys.h"
 #include "sce.h"
 #include "sce_inlines.h"
+#include "elf_inlines.h"
 #include "self.h"
+#include "elf.h"
 #include "np.h"
 #include "rvk.h"
 #include "spp.h"
@@ -292,6 +294,172 @@ static BOOL _fill_npdrm_config(self_config_t *sconf)
 	sconf->npdrm_config->real_fname = _real_fname;
 
 	return TRUE;
+}
+
+void frontend_print_infos_custom(s8 *file)
+{
+	const s8* self_name = NULL;	
+	u8* pBuffer = NULL;
+	control_info_t* pCtrlInfo = NULL;
+	opt_header_t* pOptHeader = NULL;			
+	ci_data_digest_40_t* pCtrlInfoDigest = NULL;
+	metadata_section_header_t* msh = NULL;
+	BOOL bIsCompressed = false;
+	u32 i = 0;
+
+	// read the file into the buffer
+	u8 *buf = _read_buffer(file, NULL);
+	if(buf == NULL) {
+		printf("[*] Error: Could not load %s\n", file);
+		goto exit;
+	}
+	
+	sce_buffer_ctxt_t *ctxt = sce_create_ctxt_from_buffer(buf);
+	if(ctxt == NULL) {
+		printf("[*] Error: Could not process %s\n", file);
+		goto exit;
+	}
+	
+	u8 *meta_info = NULL;
+	if(_meta_info != NULL)
+	{
+		if(strlen(_meta_info) != 0x40*2)
+		{
+			printf("[*] Error: Metadata info needs to be 64 bytes.\n");
+			return;
+		}
+		meta_info = _x_to_u8_buffer(_meta_info);
+	}
+
+	u8 *keyset = NULL;
+	if(_keyset != NULL)
+	{
+		if(strlen(_keyset) != (0x20 + 0x10 + 0x15 + 0x28 + 0x01)*2)
+		{
+			printf("[*] Error: Keyset has a wrong length.\n");
+			return;
+		}
+		keyset = _x_to_u8_buffer(_keyset);
+	}
+
+	if(sce_decrypt_header(ctxt, meta_info, keyset))
+	{
+		_LOG_VERBOSE("Header decrypted.\n");
+		if(sce_decrypt_data(ctxt))
+			_LOG_VERBOSE("Data decrypted.\n");
+		else 
+		{
+			printf("[*] Warning: Could not decrypt data.\n");
+			return;
+		}
+	}
+	else
+	{
+		printf("[*] Warning: Could not decrypt header.\n");
+		return;
+	}
+
+	//Check for SELF.
+	if(ctxt->sceh->header_type != SCE_HEADER_TYPE_SELF)
+		return;
+
+	// setup the application info types
+	self_name = _get_name(_self_types_params, ctxt->self.ai->self_type);
+	if(self_name == NULL)
+		goto exit;
+
+	// check control infos.
+	if(ctxt->self.cis == NULL) 
+		goto exit;
+
+	// check optional headers.
+	if(ctxt->mdec == FALSE)
+		goto exit;
+
+	// print the application info types
+	printf("Key-Revision:%02X\n", ctxt->sceh->key_revision);
+	printf("Auth-ID:%016llX\n", ctxt->self.ai->auth_id);
+	printf("Vendor-ID:%016X\n", ctxt->self.ai->vendor_id);
+	printf("SELF-Type:%s\n", self_name);
+	printf("AppVersion:%s\n", sce_version_to_str(ctxt->self.ai->version));
+
+	// iterate the ctrl headers, and print the FW version
+	LIST_FOREACH(iter, ctxt->self.cis)
+	{
+		//_print_control_info(fp, (control_info_t *)iter->value);
+		pCtrlInfo = (control_info_t*)iter->value;
+		switch(pCtrlInfo->type)
+		{
+		case CONTROL_INFO_TYPE_DIGEST:
+			{				
+				pCtrlInfoDigest = (ci_data_digest_40_t*)((u8*)pCtrlInfo + sizeof(control_info_t));
+				_es_ci_data_digest_40(pCtrlInfoDigest);
+				printf("FWVersion:%016X\n", pCtrlInfoDigest->fw_version);
+				break;
+			}
+		}
+	}// end LIST_FOREACH{}
+
+	// iterate the ctrl headers, and print control infos.
+	LIST_FOREACH(iter, ctxt->self.cis)
+	{
+		//_print_control_info(fp, (control_info_t *)iter->value);
+		pCtrlInfo = (control_info_t*)iter->value;
+		switch(pCtrlInfo->type)
+		{
+			case CONTROL_INFO_TYPE_FLAGS:
+			{
+				pBuffer = ((u8*)pCtrlInfo + sizeof(control_info_t));						
+				printf("CtrlFlags:");
+				for (i=0; i < (pCtrlInfo->size - sizeof(control_info_t)); i++) 
+					printf("%02X", pBuffer[i]);
+				printf("\n");
+				break;
+			}			
+		}// end switch{}
+	}// end FOREACH			
+
+	// iterate through the optional headers
+	LIST_FOREACH(iter, ctxt->self.ohs)
+	{
+		pOptHeader = (opt_header_t*)iter->value;		
+		switch(pOptHeader->type)
+		{
+			case OPT_HEADER_TYPE_CAP_FLAGS:
+			{				
+				pBuffer = (u8*)pOptHeader + sizeof(opt_header_t);						
+				printf("CapabFlags:");
+				for (i=0; i < sizeof(oh_data_cap_flags_t); i++) 
+					printf("%02X", pBuffer[i]);
+				printf("\n");				
+				break;
+			}					
+		}// end switch{}
+	}// end FOREACH	
+	
+	// loop through the metadata section headers, 
+	// check for "compressed" settings
+	for(i = 0; i < ctxt->metah->section_count; i++)
+	{
+		msh = (metadata_section_header_t*)&ctxt->metash[i];
+		// see if the section is compressed
+		if(msh->compressed == METADATA_SECTION_COMPRESSED)
+			bIsCompressed = TRUE;
+		break;		
+	}
+	// output our "compressed" status, if we found any compressed
+	// sections
+	if (bIsCompressed == TRUE)
+		printf("Compressed:TRUE\n");
+	else 
+		printf("Compressed:FALSE\n");
+
+exit:
+	// if memory was alloc'd, free it
+	if (buf != NULL)
+		free(buf);
+
+	return;
 }
 
 void frontend_print_infos(s8 *file)

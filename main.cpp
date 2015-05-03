@@ -46,6 +46,8 @@ static BOOL _got_work = FALSE;
 static BOOL _list_keys = FALSE;
 /*! Print infos on file. */
 static BOOL _print_info = FALSE;
+/*! Print custom infos on file. */
+static BOOL _print_info_custom = FALSE;
 /*! Decrypt file. */
 static BOOL _decrypt_file = FALSE;
 /*! Encrypt file. */
@@ -162,6 +164,7 @@ static void print_usage()
 	printf(" -h, --help                                   Print this help.\n");
 	printf(" -k, --print-keys                             List keys.\n");
 	printf(" -i, --print-infos      File-in               Print SCE file info.\n");
+	printf(" -w, --print-cust-info  File-in               Print SCE custom info (for PS3MFW).\n");
 	printf(" -d, --decrypt          File-in File-out      Decrypt/dump SCE file.\n");
 	printf(" -e, --encrypt          File-in File-out      Encrypt/create SCE file.\n");
 	printf("OPTIONS                 Possible Values       Explanation\n");
@@ -206,7 +209,7 @@ static void parse_args(int argc, char **argv)
 #ifdef CONFIG_CUSTOM_INDIV_SEED
 	while((c = getopt_long(argc, argv, "hki:d:e:vrt:0:1:s:2:m:K:3:4:5:A:6:7:8:9:a:b:c:f:l:g:j:", options, NULL)) != -1)
 #else
-	while((c = getopt_long(argc, argv, "hki:d:e:vrt:0:1:s:2:m:K:3:4:5:A:6:7:8:9:b:c:f:l:g:j:", options, NULL)) != -1)
+	while((c = getopt_long(argc, argv, "hki:w:d:e:vrt:0:1:s:2:m:K:3:4:5:A:6:7:8:9:b:c:f:l:g:j:", options, NULL)) != -1)
 #endif
 	{
 		switch(c)
@@ -223,6 +226,13 @@ static void parse_args(int argc, char **argv)
 		case 'i':
 			_got_work = TRUE;
 			_print_info = TRUE;
+			_file_in = optarg;
+			//Got all args.
+			return;
+			break;
+		case 'w':
+			_got_work = TRUE;
+			_print_info_custom = TRUE;
 			_file_in = optarg;
 			//Got all args.
 			return;
@@ -369,14 +379,14 @@ int main(int argc, char **argv)
 
 	//Try to get path from env:PS3.
 	if((ps3 = getenv(CONFIG_ENV_PS3)) != NULL)
-		if(access(ps3, 0) != 0)
+		if(_access(ps3, 0) != 0)
 			ps3 = NULL;
 
 	//Load keysets.
 	if(ps3 != NULL)
 	{
 		sprintf(path, "%s/%s", ps3, CONFIG_KEYS_FILE);
-		if(access(path, 0) != 0)
+		if(_access(path, 0) != 0)
 			sprintf(path, "%s/%s", CONFIG_KEYS_PATH, CONFIG_KEYS_FILE);
 	}
 	else
@@ -398,7 +408,7 @@ int main(int argc, char **argv)
 	if(ps3 != NULL)
 	{
 		sprintf(path, "%s/%s", ps3, CONFIG_CURVES_FILE);
-		if(access(path, 0) != 0)
+		if(_access(path, 0) != 0)
 			sprintf(path, "%s/%s", CONFIG_CURVES_PATH, CONFIG_CURVES_FILE);
 	}
 	else
@@ -412,7 +422,7 @@ int main(int argc, char **argv)
 	if(ps3 != NULL)
 	{
 		sprintf(path, "%s/%s", ps3, CONFIG_VSH_CURVES_FILE);
-		if(access(path, 0) != 0)
+		if(_access(path, 0) != 0)
 			sprintf(path, "%s/%s", CONFIG_VSH_CURVES_PATH, CONFIG_VSH_CURVES_FILE);
 	}
 	else
@@ -438,8 +448,11 @@ int main(int argc, char **argv)
 		printf("[*] Loaded keysets:\n");
 		_print_key_list(stdout);
 	}
+	// select the appropriate task to dispatch
 	else if(_print_info)
 		frontend_print_infos(_file_in);
+	else if(_print_info_custom)
+		frontend_print_infos_custom(_file_in);
 	else if(_decrypt_file)
 		frontend_decrypt(_file_in, _file_out);
 	else if(_encrypt_file)
