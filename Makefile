@@ -1,5 +1,7 @@
-CC=gcc
+CC=clang
+CXX=clang++
 CFLAGS=-g -O0 -Wall
+CXXFLAGS=$(CFLAGS)
 OS_TARGET=scetool
 LDFLAGS=-lz
 OBJS=aes.o aes_omac.o bn.o ec.o ecdsa.o frontend.o getopt.o keys.o list.o \
@@ -18,7 +20,7 @@ $(OS_TARGET): $(OBJS)
 
 %.o: %.c
 	${COMPILE_STATUS}
-	if ${CC} ${CFLAGS} ${CFLAGS} -c -o $@ $<; then \
+	if ${CC} ${CFLAGS} -c -o $@ $<; then \
 		${COMPILE_OK}; \
 	else \
 		${COMPILE_FAILED}; \
@@ -26,7 +28,7 @@ $(OS_TARGET): $(OBJS)
 
 %.o: %.cpp
 	${COMPILE_STATUS}
-	if ${CC} ${CFLAGS} ${CFLAGS} -c -o $@ $<; then \
+	if ${CXX} ${CXXFLAGS} -c -o $@ $<; then \
 		${COMPILE_OK}; \
 	else \
 		${COMPILE_FAILED}; \
