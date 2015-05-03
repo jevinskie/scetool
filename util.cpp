@@ -7,10 +7,10 @@
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
+#include <zlib.h>
 
 #include "types.h"
 #include "util.h"
-#include "zlib.h"
 #include "mt19937.h"
 
 void _hexdump(FILE *fp, const char *name, u32 offset, u8 *buf, int len, BOOL print_addr)

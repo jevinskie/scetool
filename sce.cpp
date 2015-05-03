@@ -8,6 +8,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
+#include <zlib.h>
 
 #include "types.h"
 #include "util.h"
@@ -22,6 +23,13 @@
 #include "config.h"
 #include "zlib.h"
 #include "np.h"
+
+// globals 
+extern u32 g_ZlibCompressLevel;
+
+
+
+
 
 void _print_sce_header(FILE *fp, sce_header_t *h)
 {
@@ -297,8 +305,7 @@ void sce_compress_data(sce_buffer_ctxt_t *ctxt)
 			{
 				size_comp = size_bound = compressBound(sec->size);
 				u8 *buf = (u8 *)malloc(sizeof(u8) * size_bound);
-				compress(buf, &size_comp, (const u8 *)sec->buffer, sec->size);
-
+				size_comp = compress2(buf, &size_comp, (const u8 *)sec->buffer, sec->size, g_ZlibCompressLevel);
 				if(size_comp < sec->size)
 				{
 					//Set compressed buffer and size.
