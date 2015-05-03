@@ -13,7 +13,7 @@ void _gf_mul(unsigned char *pad)
 
 void aes_omac1(u8 *digest, u8 *input, u32 length, u8 *key, u32 keybits)
 {
-	u32 i, j;
+	u32 i = 0, j;
 	u32 overflow;
 	aes_context ctxt;
 	unsigned char buffer1[16], buffer2[16], dbuf[16];

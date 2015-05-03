@@ -306,6 +306,9 @@ void frontend_print_infos_custom(s8 *file)
 	metadata_section_header_t* msh = NULL;
 	BOOL bIsCompressed = false;
 	u32 i = 0;
+	u8 *keyset = NULL;
+	u8 *meta_info = NULL;
+	sce_buffer_ctxt_t *ctxt = NULL;
 
 	// read the file into the buffer
 	u8 *buf = _read_buffer(file, NULL);
@@ -314,13 +317,12 @@ void frontend_print_infos_custom(s8 *file)
 		goto exit;
 	}
 	
-	sce_buffer_ctxt_t *ctxt = sce_create_ctxt_from_buffer(buf);
+	ctxt = sce_create_ctxt_from_buffer(buf);
 	if(ctxt == NULL) {
 		printf("[*] Error: Could not process %s\n", file);
 		goto exit;
 	}
 	
-	u8 *meta_info = NULL;
 	if(_meta_info != NULL)
 	{
 		if(strlen(_meta_info) != 0x40*2)
@@ -331,7 +333,6 @@ void frontend_print_infos_custom(s8 *file)
 		meta_info = _x_to_u8_buffer(_meta_info);
 	}
 
-	u8 *keyset = NULL;
 	if(_keyset != NULL)
 	{
 		if(strlen(_keyset) != (0x20 + 0x10 + 0x15 + 0x28 + 0x01)*2)
@@ -394,7 +395,7 @@ void frontend_print_infos_custom(s8 *file)
 			{				
 				pCtrlInfoDigest = (ci_data_digest_40_t*)((u8*)pCtrlInfo + sizeof(control_info_t));
 				_es_ci_data_digest_40(pCtrlInfoDigest);
-				printf("FWVersion:%016X\n", pCtrlInfoDigest->fw_version);
+				printf("FWVersion:%016llX\n", pCtrlInfoDigest->fw_version);
 				break;
 			}
 		}
@@ -608,7 +609,7 @@ void frontend_encrypt(s8 *file_in, s8 *file_out)
 {
 	BOOL can_compress = FALSE;
 	self_config_t sconf;
-	sce_buffer_ctxt_t *ctxt;
+	sce_buffer_ctxt_t *ctxt = NULL;
 	u32 file_len = 0;
 	u8 *file;
 

@@ -379,14 +379,14 @@ int main(int argc, char **argv)
 
 	//Try to get path from env:PS3.
 	if((ps3 = getenv(CONFIG_ENV_PS3)) != NULL)
-		if(_access(ps3, 0) != 0)
+		if(access(ps3, 0) != 0)
 			ps3 = NULL;
 
 	//Load keysets.
 	if(ps3 != NULL)
 	{
 		sprintf(path, "%s/%s", ps3, CONFIG_KEYS_FILE);
-		if(_access(path, 0) != 0)
+		if(access(path, 0) != 0)
 			sprintf(path, "%s/%s", CONFIG_KEYS_PATH, CONFIG_KEYS_FILE);
 	}
 	else
@@ -408,7 +408,7 @@ int main(int argc, char **argv)
 	if(ps3 != NULL)
 	{
 		sprintf(path, "%s/%s", ps3, CONFIG_CURVES_FILE);
-		if(_access(path, 0) != 0)
+		if(access(path, 0) != 0)
 			sprintf(path, "%s/%s", CONFIG_CURVES_PATH, CONFIG_CURVES_FILE);
 	}
 	else
@@ -422,7 +422,7 @@ int main(int argc, char **argv)
 	if(ps3 != NULL)
 	{
 		sprintf(path, "%s/%s", ps3, CONFIG_VSH_CURVES_FILE);
-		if(_access(path, 0) != 0)
+		if(access(path, 0) != 0)
 			sprintf(path, "%s/%s", CONFIG_VSH_CURVES_PATH, CONFIG_VSH_CURVES_FILE);
 	}
 	else
