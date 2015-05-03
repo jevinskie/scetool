@@ -475,6 +475,19 @@ int main(int argc, char **argv)
 		np_set_klicensee(_x_to_u8_buffer(_klicensee));
 	}
 
+
+	int check = check_file_size(_file_in);
+	//Checking if ZERO bytes
+	if(check <= 0)
+	{
+		if(check == 0)
+			printf("[*] Error: file size is null.\n");
+		else if(check < 0)
+			printf("[*] Error: cannot open file.\n");
+		else 
+			printf("[*] Error: unknown error (%d).\n", check);
+		return FALSE;
+	}
 	if(_list_keys == TRUE)
 	{
 		printf("[*] Loaded keysets:\n");
