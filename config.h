@@ -12,7 +12,8 @@
 /*! Private build. */
 #define CONFIG_PRIVATE_BUILD
 //#define BUILD_FOR "naehrwert"
-#define BUILD_FOR "unicorns"
+//#define BUILD_FOR "unicorns"
+#define BUILD_FOR "jevinskie"
 
 /*! scetool version. */
 #ifdef CONFIG_PRIVATE_BUILD
