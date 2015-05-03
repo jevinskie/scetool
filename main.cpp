@@ -496,6 +496,10 @@ int main(int argc, char **argv)
 		printf("[*] Loaded keysets:\n");
 		_print_key_list(stdout);
 	}
+	if (!_file_in) {
+		printf("[*] Input file has zero size. Exiting!\n");
+		return -1;
+	}
 	// select the appropriate task to dispatch
 	else if(_print_info)
 		frontend_print_infos(_file_in);
@@ -505,7 +509,6 @@ int main(int argc, char **argv)
 		frontend_decrypt(_file_in, _file_out);
 	else if(_encrypt_file)
 		frontend_encrypt(_file_in, _file_out);
-
 	return 0;
 }
 #endif

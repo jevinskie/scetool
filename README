@@ -85,6 +85,12 @@ OPTIONS                 Possible Values       Explanation
  -j, --np-add-sig       TRUE/FALSE(default)   Whether to add a NP sig. or not.
 
 ==> History <==
+Version 0.3.2
+ - Now skips 0 byte selfs(helps pupexplode run without a segfault)
+Version 0.3.1
+ - Changed configuration to private build with the following new features:
+ KeySeeds now appear when using -i on isolated modules
+ Build your own isolated module with custom KeySeed by using option -a
 Version 0.3.0
  - Added option to specify the data path
 Version 0.2.9
