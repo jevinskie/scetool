@@ -1,6 +1,6 @@
-CC=gcc
-CXX=g++
-CFLAGS=-g -O0 -Wall
+CC=clang
+CXX=clang++
+CFLAGS=-g -O0 -Wall -Wextra
 CXXFLAGS=$(CFLAGS)
 OS_TARGET=scetool
 LDFLAGS=-lz
