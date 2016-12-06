@@ -1,5 +1,7 @@
-CC=gcc
-CFLAGS=-g -O0 -Wall
+CC=clang
+CXX=clang++
+CFLAGS=-g -O0 -Wall -Wextra
+CXXFLAGS=$(CFLAGS)
 OS_TARGET=scetool
 LDFLAGS=-lz
 OBJS=aes.o aes_omac.o bn.o ec.o ecdsa.o frontend.o getopt.o keys.o list.o \
@@ -9,7 +11,7 @@ OBJS=aes.o aes_omac.o bn.o ec.o ecdsa.o frontend.o getopt.o keys.o list.o \
 
 $(OS_TARGET): $(OBJS)
 	${LINK}
-	if $(CC) $(CFLAGS) $(OBJS) -o $(OS_TARGET) $(LDFLAGS) $(LIBS); then \
+	if $(CXX) $(CXXFLAGS) $(OBJS) -o $(OS_TARGET) $(LDFLAGS) $(LIBS); then \
 		${LINK_OK}; \
 	else \
 		${LINK_FAILED}; \
@@ -18,7 +20,7 @@ $(OS_TARGET): $(OBJS)
 
 %.o: %.c
 	${COMPILE_STATUS}
-	if ${CC} ${CFLAGS} ${CFLAGS} -c -o $@ $<; then \
+	if ${CC} ${CFLAGS} -c -o $@ $<; then \
 		${COMPILE_OK}; \
 	else \
 		${COMPILE_FAILED}; \
@@ -26,7 +28,7 @@ $(OS_TARGET): $(OBJS)
 
 %.o: %.cpp
 	${COMPILE_STATUS}
-	if ${CC} ${CFLAGS} ${CFLAGS} -c -o $@ $<; then \
+	if ${CXX} ${CXXFLAGS} -c -o $@ $<; then \
 		${COMPILE_OK}; \
 	else \
 		${COMPILE_FAILED}; \

@@ -16,7 +16,7 @@
 #include "elf_inlines.h"
 #include "tables.h"
 #include "sha1.h"
-#include "np.h"
+
 
 static void _get_shdr_flags(s8 *str, u64 flags)
 {
@@ -612,9 +612,9 @@ BOOL self_write_to_elf(sce_buffer_ctxt_t *ctxt, const s8 *elf_out)
 					u8 *data = (u8 *)malloc(ph[msh[i].index].p_filesz);
 
 					_zlib_inflate(ctxt->scebuffer + msh[i].data_offset, msh[i].data_size, data, ph[msh[i].index].p_filesz);
+
 					fseek(fp, ph[msh[i].index].p_offset, SEEK_SET);
 					fwrite(data, sizeof(u8), ph[msh[i].index].p_filesz, fp);
-
 					free(data);
 				}
 				else
@@ -1008,9 +1008,9 @@ static BOOL _build_self_64(sce_buffer_ctxt_t *ctxt, self_config_t *sconf)
 		{
 			const s8 *name = _get_name(_ph_types, phdrs[i].p_type);
 			if(name != NULL)
-				_LOG_VERBOSE("Skipped program header %-8s @ 0x%08X (0x%08X)\n", name, phdrs[i].p_offset, phdrs[i].p_filesz);
+				_LOG_VERBOSE("Skipped program header %-8s @ 0x%08llX (0x%08llX)\n", name, phdrs[i].p_offset, phdrs[i].p_filesz);
 			else
-				_LOG_VERBOSE("Skipped program header 0x%08X @ 0x%08X (0x%08X)\n", phdrs[i].p_type, phdrs[i].p_offset, phdrs[i].p_filesz);
+				_LOG_VERBOSE("Skipped program header 0x%08X @ 0x%08llX (0x%08llX)\n", phdrs[i].p_type, phdrs[i].p_offset, phdrs[i].p_filesz);
 			skip++;
 		}
 		else

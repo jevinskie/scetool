@@ -9,6 +9,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include <zlib.h>
+
 #ifdef _WIN32
 #include <io.h>
 #include "getopt.h"
@@ -35,6 +37,9 @@
 #define ARG_REQ required_argument
 #define ARG_OPT optional_argument
 
+
+/*  ZLIB 'compress' LEVEL */
+int g_ZlibCompressLevel = Z_DEFAULT_COMPRESSION;
 /*! Verbose mode. */
 BOOL _verbose = FALSE;
 /*! Raw mode. */
@@ -46,6 +51,8 @@ static BOOL _got_work = FALSE;
 static BOOL _list_keys = FALSE;
 /*! Print infos on file. */
 static BOOL _print_info = FALSE;
+/*! Print custom infos on file. */
+static BOOL _print_info_custom = FALSE;
 /*! Decrypt file. */
 static BOOL _decrypt_file = FALSE;
 /*! Encrypt file. */
@@ -76,6 +83,7 @@ s8 *_content_id = NULL;
 s8 *_klicensee = NULL;
 s8 *_real_fname = NULL;
 s8 *_add_sig = NULL;
+s8 *_data_path = NULL;
 
 /*! Input file. */
 static s8 *_file_in = NULL;
@@ -115,6 +123,7 @@ static struct option options[] =
 	{"print-infos", ARG_REQ, NULL, 'i'},
 	{"decrypt", ARG_REQ, NULL, 'd'},
 	{"encrypt", ARG_REQ, NULL, 'e'},
+	{"data-path", ARG_REQ, NULL, 'p'},
 	{"verbose", ARG_NONE, NULL, 'v'},
 	{"raw", ARG_NONE, NULL, 'r'},
 	{"template", ARG_REQ, NULL, VAL_TEMPLATE},
@@ -162,9 +171,12 @@ static void print_usage()
 	printf(" -h, --help                                   Print this help.\n");
 	printf(" -k, --print-keys                             List keys.\n");
 	printf(" -i, --print-infos      File-in               Print SCE file info.\n");
+	printf(" -w, --print-cust-info  File-in               Print SCE custom info (for PS3MFW).\n");
+	printf(" -z, --zlib-comp-level  (-1 to 9)             Set Zlib Compress Level(-1 is default)\n");
 	printf(" -d, --decrypt          File-in File-out      Decrypt/dump SCE file.\n");
 	printf(" -e, --encrypt          File-in File-out      Encrypt/create SCE file.\n");
 	printf("OPTIONS                 Possible Values       Explanation\n");
+	printf(" -p, --data-path        path/of/the/data      Define the path of the data dir\n");
 	printf(" -v, --verbose                                Enable verbose output.\n");
 	printf(" -r, --raw                                    Enable raw value output.\n");
 	printf(" -t, --template         File-in               Template file (SELF only)\n");
@@ -204,9 +216,9 @@ static void parse_args(int argc, char **argv)
 	char c;
 
 #ifdef CONFIG_CUSTOM_INDIV_SEED
-	while((c = getopt_long(argc, argv, "hki:d:e:vrt:0:1:s:2:m:K:3:4:5:A:6:7:8:9:a:b:c:f:l:g:j:", options, NULL)) != -1)
+	while((c = getopt_long(argc, argv, "hki:w:d:e:p:vrt:0:1:s:2:m:K:3:4:5:A:6:7:8:9:a:b:c:f:l:g:j:z", options, NULL)) != -1)
 #else
-	while((c = getopt_long(argc, argv, "hki:d:e:vrt:0:1:s:2:m:K:3:4:5:A:6:7:8:9:b:c:f:l:g:j:", options, NULL)) != -1)
+	while((c = getopt_long(argc, argv, "hki:w:d:e:p:vrt:0:1:s:2:m:K:3:4:5:A:6:7:8:9:b:c:f:l:g:j:z", options, NULL)) != -1)
 #endif
 	{
 		switch(c)
@@ -226,6 +238,14 @@ static void parse_args(int argc, char **argv)
 			_file_in = optarg;
 			//Got all args.
 			return;
+			break;	
+		/* print_infos_custom (for PS3MFW) */
+		case 'w':	
+			_got_work = TRUE;
+			_print_info_custom = TRUE;
+			_file_in = optarg;
+			//Got all args.	
+			return;
 			break;
 		case 'd':
 			_got_work = TRUE;
@@ -240,6 +260,9 @@ static void parse_args(int argc, char **argv)
 			_file_in = optarg;
 			//Need more args.
 			goto get_args;
+			break;
+		case 'p':
+			_data_path = optarg;
 			break;
 		case 'v':
 			_verbose = TRUE;
@@ -314,6 +337,15 @@ static void parse_args(int argc, char **argv)
 			break;
 		case VAL_ADD_SIG:
 			_add_sig = optarg;
+			break;		
+		/* Zlib Compress level setting */
+		case 'z':					
+			g_ZlibCompressLevel = atoi(optarg);
+			if ( (g_ZlibCompressLevel > 9) && (g_ZlibCompressLevel != -1) ) {
+				printf("\n\n[*] Error: Zlib Compress level must be in the range[-1:9]\n\n");
+				print_usage();
+			}
+			//Got all args.			
 			break;
 		case '?':
 			print_usage();
@@ -365,15 +397,23 @@ int main(int argc, char **argv)
 		print_usage();
 
 	print_version();
-	printf("\n");
+	printf("\n\n");
+
+	/* print the ZLIB COMPRESSION SETTING */
+	printf("*** Zlib Compression Level:%d ***\n\n", g_ZlibCompressLevel);
 
 	//Try to get path from env:PS3.
-	if((ps3 = getenv(CONFIG_ENV_PS3)) != NULL)
-		if(access(ps3, 0) != 0)
+	if(_data_path == NULL && (ps3 = getenv(CONFIG_ENV_PS3)) != NULL) {
+		if(access(ps3, 0) != 0) {
 			ps3 = NULL;
-
+		} else {
+			_data_path = ps3;
+		}
+	}
 	//Load keysets.
-	if(ps3 != NULL)
+	if(_data_path != NULL)
+		sprintf(path, "%s/%s", _data_path, CONFIG_KEYS_FILE);
+	else if(ps3 != NULL)
 	{
 		sprintf(path, "%s/%s", ps3, CONFIG_KEYS_FILE);
 		if(access(path, 0) != 0)
@@ -381,21 +421,24 @@ int main(int argc, char **argv)
 	}
 	else
 		sprintf(path, "%s/%s", CONFIG_KEYS_PATH, CONFIG_KEYS_FILE);
+
 	if(keys_load(path) == TRUE)
 		_LOG_VERBOSE("Loaded keysets.\n");
-	else
+	else 
 	{
 		if(_list_keys == TRUE)
 		{
 			printf("[*] Error: Could not load keys.\n");
-			return 0;
+			return 1;
 		}
 		else
 			printf("[*] Warning: Could not load keys.\n");
 	}
 
 	//Load curves.
-	if(ps3 != NULL)
+	if(_data_path != NULL)
+		sprintf(path, "%s/%s", _data_path, CONFIG_CURVES_FILE);
+	else if(ps3 != NULL)
 	{
 		sprintf(path, "%s/%s", ps3, CONFIG_CURVES_FILE);
 		if(access(path, 0) != 0)
@@ -408,8 +451,10 @@ int main(int argc, char **argv)
 	else
 		printf("[*] Warning: Could not load loader curves.\n");
 
-	//Load curves.
-	if(ps3 != NULL)
+	//Load vsh curves.
+	if(_data_path != NULL)
+		sprintf(path, "%s/%s", _data_path, CONFIG_VSH_CURVES_FILE);
+	else if(ps3 != NULL)
 	{
 		sprintf(path, "%s/%s", ps3, CONFIG_VSH_CURVES_FILE);
 		if(access(path, 0) != 0)
@@ -428,23 +473,38 @@ int main(int argc, char **argv)
 		if(strlen(_klicensee) != 0x10*2)
 		{
 			printf("[*] Error: klicensee needs to be 16 bytes.\n");
-			return FALSE;
+			return 1;
 		}
 		np_set_klicensee(_x_to_u8_buffer(_klicensee));
 	}
 
+
+	int check = check_file_size(_file_in);
+	//Checking if ZERO bytes
+	if(check <= 0)
+	{
+		if(check == 0)
+			printf("[*] Error: file size is null.\n");
+		else if(check < 0)
+			printf("[*] Error: cannot open file.\n");
+		else 
+			printf("[*] Error: unknown error (%d).\n", check);
+		return 1;
+	}
 	if(_list_keys == TRUE)
 	{
 		printf("[*] Loaded keysets:\n");
 		_print_key_list(stdout);
 	}
+	// select the appropriate task to dispatch
 	else if(_print_info)
-		frontend_print_infos(_file_in);
+		return frontend_print_infos(_file_in);
+	else if(_print_info_custom)
+		return frontend_print_infos_custom(_file_in);
 	else if(_decrypt_file)
-		frontend_decrypt(_file_in, _file_out);
+		return frontend_decrypt(_file_in, _file_out);
 	else if(_encrypt_file)
-		frontend_encrypt(_file_in, _file_out);
-
-	return 0;
+		return frontend_encrypt(_file_in, _file_out);
+	return 1;
 }
 #endif

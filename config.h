@@ -7,12 +7,13 @@
 #define _CONFIG_H_
 
 /*! scetool base version. */
-#define SCETOOL_VERSION_BASE "0.2.9"
+#define SCETOOL_VERSION_BASE "0.3.2"
 
 /*! Private build. */
-//#define CONFIG_PRIVATE_BUILD
-#define BUILD_FOR "naehrwert"
+#define CONFIG_PRIVATE_BUILD
+//#define BUILD_FOR "naehrwert"
 //#define BUILD_FOR "unicorns"
+#define BUILD_FOR "jevinskie"
 
 /*! scetool version. */
 #ifdef CONFIG_PRIVATE_BUILD
@@ -46,7 +47,7 @@
 #define CONFIG_NPDRM_WATERMARK "watermarktrololo"
 
 /*! Environment variables. */
-#define CONFIG_ENV_PS3 "PS3"
+#define CONFIG_ENV_PS3 "PS3_KEYS"
 
 /*! Path configurations. */
 #define CONFIG_KEYS_FILE "keys"

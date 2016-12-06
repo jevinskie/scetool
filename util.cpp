@@ -7,10 +7,10 @@
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
+#include <zlib.h>
 
 #include "types.h"
 #include "util.h"
-#include "zlib.h"
 #include "mt19937.h"
 
 void _hexdump(FILE *fp, const char *name, u32 offset, u8 *buf, int len, BOOL print_addr)
@@ -55,17 +55,21 @@ u8 *_read_buffer(const s8 *file, u32 *length)
 
 	fseek(fp, 0, SEEK_END);
 	size = ftell(fp);
-	fseek(fp, 0, SEEK_SET);
+	if (!size) {
+		fclose(fp);
+		return NULL;
+	} else {
+		fseek(fp, 0, SEEK_SET);
 
-	u8 *buffer = (u8 *)malloc(sizeof(u8) * size);
-	fread(buffer, sizeof(u8), size, fp);
+		u8 *buffer = (u8 *)malloc(sizeof(u8) * size);
+		fread(buffer, sizeof(u8), size, fp);
 
-	if(length != NULL)
-		*length = size;
+		if(length != NULL)
+			*length = size;
 
-	fclose(fp);
-
-	return buffer;
+		fclose(fp);
+		return buffer;
+	}
 }
 
 int _write_buffer(const s8 *file, u8 *buffer, u32 length)
@@ -247,4 +251,21 @@ u8 *_x_to_u8_buffer(const s8 *hex)
 	}
 
 	return res;
+}
+
+
+int check_file_size(const char* file_in){
+	FILE *fp;
+
+	if((fp = fopen(file_in, "rb")) == NULL)
+		return -1;
+
+	fseek(fp, 0L, SEEK_END);
+	size_t file_size = ftell(fp);
+	fclose(fp);
+
+	if(file_size>0)
+		return 1;
+
+	return 0;
 }
